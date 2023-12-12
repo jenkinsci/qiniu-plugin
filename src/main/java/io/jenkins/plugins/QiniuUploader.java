@@ -24,9 +24,13 @@ import jenkins.MasterToSlaveFileCallable;
 class QiniuUploader extends MasterToSlaveFileCallable<Void> {
     private static final Logger LOG = Logger.getLogger(QiniuUploader.class.getName());
 
+    @Nonnull
     private final String objectNamePrefix;
+    @Nonnull
     private final QiniuConfig config;
+    @Nonnull
     private final Map<String, String> artifactURLs;
+    @Nonnull
     private final TaskListener listener;
 
     QiniuUploader(@Nonnull QiniuConfig config, @Nonnull Map<String, String> artifactURLs,
@@ -43,28 +47,38 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
             return null;
         }
 
-        final Configuration config = this.config.getConfiguration();
-        final UploadManager uploadManager = new UploadManager(config);
-        final Auth auth = Auth.create(this.config.getAccessKey(), this.config.getSecretKey().getPlainText());
-        StringMap params = new StringMap().put("insertOnly", 1);
-        if (this.config.isInfrequentStorage()) {
-            params = params.put("fileType", 1);
-        }
-        final String uploadToken = auth.uploadToken(this.config.getBucketName(), null, 24 * 3600, params);
-
         Initializer.setAppName();
 
         try {
-            for (Map.Entry<String, String> entry : this.artifactURLs.entrySet()) {
-                final String objectName = this.objectNamePrefix + entry.getValue();
-                final File file = new File(root, entry.getKey());
-                uploadManager.put(file, objectName, uploadToken, null, null, true);
-                LOG.log(Level.INFO, "Qiniu upload {0} to {1}", new Object[] { file.getAbsolutePath(), objectName });
-            }
+            this.deleteFiles();
+            this.uploadFiles(root);
         } finally {
             this.listener.getLogger().flush();
         }
         LOG.log(Level.INFO, "Qiniu uploading is done");
         return null;
+    }
+
+    private void deleteFiles() throws IOException {
+        final QiniuFileSystem qiniuFileSystem = QiniuFileSystem.create(this.config, this.objectNamePrefix);
+        qiniuFileSystem.deleteAll();
+        LOG.log(Level.INFO, "Qiniu pre-clean {0} done", new Object[] { this.objectNamePrefix });
+    }
+
+    private void uploadFiles(final File root) throws IOException {
+        final Configuration config = this.config.getConfiguration();
+        final UploadManager uploadManager = new UploadManager(config);
+        StringMap params = new StringMap().put("insertOnly", 1);
+        if (this.config.isInfrequentStorage()) {
+            params = params.put("fileType", 1);
+        }
+        final Auth auth = Auth.create(this.config.getAccessKey(), this.config.getSecretKey().getPlainText());
+        final String uploadToken = auth.uploadToken(this.config.getBucketName(), null, 24 * 3600, params);
+        for (Map.Entry<String, String> entry : this.artifactURLs.entrySet()) {
+            final String objectName = this.objectNamePrefix + entry.getValue();
+            final File file = new File(root, entry.getKey());
+            uploadManager.put(file, objectName, uploadToken, null, null, true);
+            LOG.log(Level.INFO, "Qiniu upload {0} to {1}", new Object[] { file.getAbsolutePath(), objectName });
+        }
     }
 }
