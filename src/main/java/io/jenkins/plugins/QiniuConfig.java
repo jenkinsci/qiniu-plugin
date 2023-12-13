@@ -14,7 +14,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Util;
 import hudson.util.Secret;
 
-public class QiniuConfig implements Serializable {
+public final class QiniuConfig implements Serializable, QiniuConfigurable {
     @Nonnull
     private final String accessKey;
     @Nonnull
@@ -71,7 +71,11 @@ public class QiniuConfig implements Serializable {
 
     @Nonnull
     public Auth getAuth() {
-        return Auth.create(this.accessKey, this.secretKey.getPlainText());
+        final Auth auth = Auth.create(this.accessKey, this.secretKey.getPlainText());
+        if (auth == null) {
+            throw new RuntimeException("Failed to create Auth");
+        }
+        return auth;
     }
 
     @Nonnull

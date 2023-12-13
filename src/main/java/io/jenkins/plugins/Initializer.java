@@ -2,7 +2,7 @@ package io.jenkins.plugins;
 
 import com.qiniu.http.Client;
 
-public class Initializer {
+final class Initializer {
     private static boolean haveSet = false;
 
     static void setAppName() {

@@ -32,7 +32,7 @@ import jenkins.tasks.SimpleBuildStep;
 import jenkins.util.BuildListenerAdapter;
 
 @Restricted(NoExternalUse.class)
-public class QiniuPublisher extends Recorder implements SimpleBuildStep {
+public final class QiniuPublisher extends Recorder implements SimpleBuildStep {
     private static final Logger LOG = Logger.getLogger(QiniuPublisher.class.getName());
     private String includeFilesGlob, excludeFilesGlob;
     private boolean allowEmptyArchive, onlyIfSuccessful, useDefaultExcludes, caseSensitive;

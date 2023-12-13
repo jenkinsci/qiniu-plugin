@@ -26,17 +26,16 @@ import org.kohsuke.accmod.restrictions.NoExternalUse;
 
 import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.model.FileInfo;
-import com.qiniu.storage.model.FileListing;
 
 @Restricted(NoExternalUse.class)
-class QiniuFileSystem implements Serializable {
+final class QiniuFileSystem implements Serializable {
     private static final Logger LOG = Logger.getLogger(QiniuFileSystem.class.getName());
     static final char SEPARATOR_CHAR = '/';
     static final String SEPARATOR = "/";
 
     @Nonnull
     private QiniuConfig config;
-    @Nullable
+    @Nonnull
     private String objectNamePrefix;
     @Nonnull
     private DirectoryNode rootNode;
@@ -58,31 +57,18 @@ class QiniuFileSystem implements Serializable {
     private void initNodes() {
         LOG.log(Level.INFO, "QiniuFileSystem::{0}::list()", this.objectNamePrefix);
         final BucketManager bucketManager = this.config.getBucketManager();
-        String marker = null;
         String prefix = this.objectNamePrefix.toString();
         if (!prefix.isEmpty() && !prefix.endsWith(SEPARATOR)) {
             prefix += SEPARATOR;
         }
         try {
-            for (;;) {
-                LOG.log(Level.INFO, "QiniuFileSystem::{0}::list(), prefix={1}, marker={2}",
-                        new Object[] { this.objectNamePrefix, prefix, marker });
-                final FileListing list = bucketManager.listFiles(this.config.getBucketName(), prefix, marker, 1000,
-                        null);
-                if (list.items != null) {
-                    for (FileInfo metadata : list.items) {
-                        final Path path = fromObjectNameToFileSystemPath(this.objectNamePrefix)
-                                .relativize(fromObjectNameToFileSystemPath(metadata.key));
-                        LOG.log(Level.INFO, "QiniuFileSystem::{0}::list(), key={1}",
-                                new Object[] { this.objectNamePrefix, path.toString() });
-                        this.createFileNodeByPath(path, metadata);
-                    }
-                }
-                marker = list.marker;
-                if (marker == null || marker.isEmpty()) {
-                    break;
-                }
-            }
+            QiniuUtils.listPrefix(bucketManager, this.config.getBucketName(), prefix, (FileInfo metadata) -> {
+                final Path path = fromObjectNameToFileSystemPath(this.objectNamePrefix)
+                        .relativize(fromObjectNameToFileSystemPath(metadata.key));
+                LOG.log(Level.INFO, "QiniuFileSystem::{0}::list(), key={1}",
+                        new Object[] { this.objectNamePrefix, path.toString() });
+                this.createFileNodeByPath(path, metadata);
+            });
         } catch (IOException e) {
             LOG.log(Level.INFO, "QiniuFileSystem::{0}::list() error: {1}", new Object[] { this.objectNamePrefix, e });
             this.ioException = e;
@@ -188,38 +174,11 @@ class QiniuFileSystem implements Serializable {
     void deleteAll() throws IOException {
         LOG.log(Level.INFO, "delete all nodes");
         final BucketManager bucketManager = this.config.getBucketManager();
-        final BucketManager.BatchOperations batch = new BucketManager.BatchOperations();
-        int counter = 0;
-        String marker = null;
-        String prefix = "";
-        if (this.objectNamePrefix != null) {
-            prefix = this.objectNamePrefix;
-        }
+        String prefix = this.objectNamePrefix;
         if (!prefix.isEmpty() && !prefix.endsWith(SEPARATOR)) {
             prefix += SEPARATOR;
         }
-
-        for (;;) {
-            final FileListing list = bucketManager.listFiles(this.config.getBucketName(), prefix, marker, 1000, null);
-            if (list.items != null) {
-                for (FileInfo metadata : list.items) {
-                    batch.addDeleteOp(this.config.getBucketName(), metadata.key);
-                    counter++;
-                    if (counter >= 1000) {
-                        bucketManager.batch(batch);
-                        batch.clearOps();
-                        counter = 0;
-                    }
-                }
-            }
-            marker = list.marker;
-            if (marker == null || marker.isEmpty()) {
-                break;
-            }
-        }
-        if (counter > 0) {
-            bucketManager.batch(batch);
-        }
+        QiniuUtils.deletePrefix(bucketManager, this.config.getBucketName(), prefix);
         this.rootNode.childrenNodes.clear();
     }
 
@@ -316,7 +275,6 @@ class QiniuFileSystem implements Serializable {
             return this.childrenNodes.values();
         }
 
-        @Nonnull
         int getChildrenCount() {
             return this.childrenNodes.size();
         }
@@ -376,11 +334,7 @@ class QiniuFileSystem implements Serializable {
 
     @Nonnull
     public String getObjectNamePrefix() {
-        if (this.objectNamePrefix == null) {
-            return "";
-        } else {
-            return this.objectNamePrefix;
-        }
+        return this.objectNamePrefix;
     }
 
     @Nonnull
