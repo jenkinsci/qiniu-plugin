@@ -22,7 +22,7 @@ import io.jenkins.plugins.QiniuFileSystem.InvalidPathError;
 import jenkins.util.VirtualFile;
 
 @Restricted(NoExternalUse.class)
-public class QiniuFile extends VirtualFile {
+public final class QiniuFile extends VirtualFile {
     private static final Logger LOG = Logger.getLogger(QiniuFile.class.getName());
 
     private String objectName;
@@ -84,8 +84,9 @@ public class QiniuFile extends VirtualFile {
     @Override
     public URL toExternalURL() throws IOException {
         LOG.log(Level.INFO, "QiniuFile::{0}::toExternalURL()", this.objectName);
+        final QiniuConfig config = this.qiniuFileSystem.getConfig();
         String scheme = "http";
-        if (this.qiniuFileSystem.getConfig().isUseHTTPs()) {
+        if (config.isUseHTTPs()) {
             scheme = "https";
         }
 
@@ -94,9 +95,13 @@ public class QiniuFile extends VirtualFile {
             objectName = QiniuFileSystem.SEPARATOR + objectName;
         }
 
-        final String url = new URL(scheme, this.qiniuFileSystem.getConfig().getDownloadDomain(), objectName).toString();
+        String downloadDomain = config.getDownloadDomain();
+        if (downloadDomain.isEmpty()) {
+            downloadDomain = config.getBucketManager().getDefaultIoSrcHost(config.getBucketName());
+        }
+        final String url = new URL(scheme, downloadDomain, objectName).toString();
         LOG.log(Level.INFO, "QiniuFile::{0}::toExternalURL() url={0}", url);
-        return new URL(this.qiniuFileSystem.getConfig().getAuth().privateDownloadUrl(url));
+        return new URL(this.qiniuFileSystem.getConfig().getAuth().privateDownloadUrl(url, 180));
     }
 
     @CheckForNull

@@ -27,7 +27,7 @@ import jenkins.model.StandardArtifactManager;
 import jenkins.util.VirtualFile;
 
 @Restricted(NoExternalUse.class)
-public class QiniuArtifactManager extends ArtifactManager {
+public final class QiniuArtifactManager extends ArtifactManager {
     private static final Logger LOG = Logger.getLogger(QiniuArtifactManager.class.getName());
 
     @Nonnull
@@ -39,7 +39,7 @@ public class QiniuArtifactManager extends ArtifactManager {
     @Nonnull
     private String objectNamePrefixWithBuildNumber;
 
-    public QiniuArtifactManager(@Nonnull Run<?, ?> run, @Nonnull QiniuConfig config) {
+    public QiniuArtifactManager(Run<?, ?> run, @Nonnull QiniuConfig config) {
         this.config = config;
         this.objectNamePrefixWithBuildNumber = this.generateObjectNamePrefixWithBuildNumber(run);
         this.standardArtifactManager = new StandardArtifactManager(run);
@@ -49,7 +49,7 @@ public class QiniuArtifactManager extends ArtifactManager {
     }
 
     @Override
-    public void onLoad(@Nonnull Run<?, ?> run) {
+    public void onLoad(Run<?, ?> run) {
         this.objectNamePrefixWithBuildNumber = this.generateObjectNamePrefixWithBuildNumber(run);
         this.standardArtifactManager = new StandardArtifactManager(run);
         this.marker = new Marker(this.objectNamePrefixWithBuildNumber, this.config);
@@ -57,15 +57,17 @@ public class QiniuArtifactManager extends ArtifactManager {
     }
 
     @Nonnull
-    private String generateObjectNamePrefixWithBuildNumber(@Nonnull Run<?, ?> run) {
+    private String generateObjectNamePrefixWithBuildNumber(Run<?, ?> run) {
         String n = this.config.getObjectNamePrefix();
         if (!n.isEmpty() && !n.endsWith(QiniuFileSystem.SEPARATOR)) {
             n += QiniuFileSystem.SEPARATOR;
         }
-        n += run.getParent().getFullName();
-        n += QiniuFileSystem.SEPARATOR;
-        n += run.getId();
-        n += QiniuFileSystem.SEPARATOR;
+        if (run != null) {
+            n += run.getParent().getFullName();
+            n += QiniuFileSystem.SEPARATOR;
+            n += run.getId();
+            n += QiniuFileSystem.SEPARATOR;
+        }
         return n;
     }
 

@@ -33,12 +33,14 @@ import jenkins.model.ArtifactManagerFactoryDescriptor;
 import jenkins.model.Jenkins;
 
 @Restricted(NoExternalUse.class)
-public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
+public final class QiniuArtifactManagerFactory extends ArtifactManagerFactory implements QiniuConfigurable {
     public static final boolean applyForAllJobs = false;
     private static final Logger LOG = Logger.getLogger(QiniuArtifactManagerFactory.class.getName());
     private static final String DEFAULT_RS_HOST = Configuration.defaultRsHost;
     private static final String DEFAULT_API_HOST = Configuration.defaultApiHost;
     private static final String DEFAULT_UC_HOST = Configuration.defaultUcHost;
+
+    @Nonnull
     private final QiniuConfig config;
 
     @DataBoundConstructor
@@ -127,32 +129,52 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
         if (downloadDomain == null) {
             downloadDomain = "";
         }
-        final QiniuConfig config = new QiniuConfig(accessKey, secretKey, bucketName, objectNamePrefix, downloadDomain,
+        QiniuConfig config = new QiniuConfig(accessKey, secretKey, bucketName, objectNamePrefix, downloadDomain,
                 upDomain, rsDomain, rsfDomain, ucDomain, apiDomain, useHTTPs, infrequentStorage, deleteArtifacts,
                 applyForAllJobs, multipartUploadConcurrency, multipartUploadPartSize, multipartUploadThreshold,
                 connectTimeout, readTimeout, writeTimeout, retryCount);
         if (downloadDomain.isEmpty()) {
+            boolean couldUseDefaultIoSrc = false;
             try {
-                final String[] domainList = config.getBucketManager().domainList(config.getBucketName());
-                if (domainList.length > 0) {
-                    this.config = new QiniuConfig(accessKey, secretKey, bucketName, objectNamePrefix,
-                            domainList[domainList.length - 1], upDomain, rsDomain, rsfDomain, ucDomain, apiDomain,
-                            useHTTPs, infrequentStorage, deleteArtifacts, applyForAllJobs,
-                            multipartUploadConcurrency, multipartUploadPartSize, multipartUploadThreshold,
-                            connectTimeout, readTimeout, writeTimeout, retryCount);
-                } else {
-                    throw new CannotGetDownloadDomain(
-                            "Bucket " + config.getBucketName() + " are not bound with any download domain");
-                }
+                final String defaultIoSrc = config.getBucketManager().getDefaultIoSrcHost(config.getBucketName());
+                couldUseDefaultIoSrc = defaultIoSrc != null && !defaultIoSrc.isEmpty();
             } catch (QiniuException e) {
-                throw new QiniuRuntimeException(e);
+                // do nothing
             }
-        } else {
-            this.config = config;
+            if (!couldUseDefaultIoSrc) {
+                try {
+                    final String[] domainList = config.getBucketManager().domainList(config.getBucketName());
+                    String defaultDomain = null;
+                    if (domainList.length > 0) {
+                        defaultDomain = domainList[domainList.length - 1];
+                    }
+                    if (defaultDomain != null) {
+                        config = new QiniuConfig(accessKey, secretKey, bucketName,
+                                objectNamePrefix, defaultDomain,
+                                upDomain, rsDomain, rsfDomain, ucDomain, apiDomain,
+                                useHTTPs, infrequentStorage, deleteArtifacts, applyForAllJobs,
+                                multipartUploadConcurrency, multipartUploadPartSize,
+                                multipartUploadThreshold,
+                                connectTimeout, readTimeout, writeTimeout, retryCount);
+                    } else {
+                        throw new CannotGetDownloadDomain(
+                                "Bucket " + config.getBucketName() + " are not bound with any download domain");
+                    }
+                } catch (QiniuException e) {
+                    throw new QiniuRuntimeException(e);
+                }
+            }
         }
-        LOG.log(Level.INFO,
-                "QiniuArtifactManagerFactory is configured: accessKey={0}, bucketName={1}, downloadDomain={2}",
-                new Object[] { accessKey, bucketName, downloadDomain });
+        this.config = config;
+        if (downloadDomain != "") {
+            LOG.log(Level.INFO,
+                    "QiniuArtifactManagerFactory is configured: accessKey={0}, bucketName={1}, downloadDomain={2}",
+                    new Object[] { accessKey, bucketName, downloadDomain });
+        } else {
+            LOG.log(Level.INFO,
+                    "QiniuArtifactManagerFactory is configured: accessKey={0}, bucketName={1}, useDefaultIoSrcDomain=true",
+                    new Object[] { accessKey, bucketName });
+        }
     }
 
     @Nonnull
@@ -521,6 +543,14 @@ public class QiniuArtifactManagerFactory extends ArtifactManagerFactory {
             final BucketManager bucketManager = this.getBucketManager(accessKey, secretKey, upDomain, rsDomain,
                     rsfDomain, ucDomain, apiDomain, useHTTPs);
             if (bucketManager != null && bucketName != null && downloadDomain == null) {
+                try {
+                    final String defaultIoSrcHost = bucketManager.getDefaultIoSrcHost(bucketName);
+                    if (defaultIoSrcHost != null && !defaultIoSrcHost.isEmpty()) {
+                        return true;
+                    }
+                } catch (QiniuException e) {
+                    // do nothing
+                }
                 try {
                     final String[] domainList = bucketManager.domainList(bucketName);
                     return domainList.length > 0;

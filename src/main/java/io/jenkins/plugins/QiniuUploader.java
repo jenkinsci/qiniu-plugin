@@ -21,7 +21,7 @@ import hudson.remoting.VirtualChannel;
 import jenkins.MasterToSlaveFileCallable;
 
 @Restricted(NoExternalUse.class)
-class QiniuUploader extends MasterToSlaveFileCallable<Void> {
+final class QiniuUploader extends MasterToSlaveFileCallable<Void> {
     private static final Logger LOG = Logger.getLogger(QiniuUploader.class.getName());
 
     @Nonnull
@@ -30,11 +30,10 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
     private final QiniuConfig config;
     @Nonnull
     private final Map<String, String> artifactURLs;
-    @Nonnull
     private final TaskListener listener;
 
     QiniuUploader(@Nonnull QiniuConfig config, @Nonnull Map<String, String> artifactURLs,
-            @Nonnull String objectNamePrefix, @Nonnull TaskListener listener) {
+            @Nonnull String objectNamePrefix, TaskListener listener) {
         this.config = config;
         this.artifactURLs = artifactURLs;
         this.objectNamePrefix = objectNamePrefix;
@@ -53,15 +52,16 @@ class QiniuUploader extends MasterToSlaveFileCallable<Void> {
             this.deleteFiles();
             this.uploadFiles(root);
         } finally {
-            this.listener.getLogger().flush();
+            if (this.listener != null) {
+                this.listener.getLogger().flush();
+            }
         }
         LOG.log(Level.INFO, "Qiniu uploading is done");
         return null;
     }
 
     private void deleteFiles() throws IOException {
-        final QiniuFileSystem qiniuFileSystem = QiniuFileSystem.create(this.config, this.objectNamePrefix);
-        qiniuFileSystem.deleteAll();
+        QiniuUtils.deletePrefix(this.config.getBucketManager(), this.config.getBucketName(), this.objectNamePrefix);
         LOG.log(Level.INFO, "Qiniu pre-clean {0} done", new Object[] { this.objectNamePrefix });
     }
 

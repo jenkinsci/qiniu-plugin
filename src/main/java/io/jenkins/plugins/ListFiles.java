@@ -14,7 +14,7 @@ import hudson.Util;
 import hudson.remoting.VirtualChannel;
 import jenkins.MasterToSlaveFileCallable;
 
-class ListFiles extends MasterToSlaveFileCallable<Map<String, String>> {
+final class ListFiles extends MasterToSlaveFileCallable<Map<String, String>> {
     private static final long serialVersionUID = 1;
 
     @Nonnull
@@ -30,11 +30,11 @@ class ListFiles extends MasterToSlaveFileCallable<Map<String, String>> {
     }
 
     @Override
-    public Map<String, String> invoke(@Nonnull File basedir, VirtualChannel channel)
+    public Map<String, String> invoke(File basedir, VirtualChannel channel)
             throws IOException, InterruptedException {
-        Map<String, String> r = new HashMap<>();
+        final Map<String, String> r = new HashMap<>();
 
-        FileSet fileSet = Util.createFileSet(basedir, includes, excludes);
+        final FileSet fileSet = Util.createFileSet(basedir, includes, excludes);
         fileSet.setDefaultexcludes(defaultExcludes);
         fileSet.setCaseSensitive(caseSensitive);
 
