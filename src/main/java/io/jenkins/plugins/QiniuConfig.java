@@ -15,6 +15,7 @@ import hudson.Util;
 import hudson.util.Secret;
 
 public final class QiniuConfig implements Serializable, QiniuConfigurable {
+    private static final long serialVersionUID = 3L;
     @Nonnull
     private final String accessKey;
     @Nonnull
@@ -24,7 +25,8 @@ public final class QiniuConfig implements Serializable, QiniuConfigurable {
     @Nonnull
     private final String rsDomain, rsfDomain, ucDomain, apiDomain;
 
-    private final boolean useHTTPs, infrequentStorage, deleteArtifacts, applyForAllJobs;
+    private final boolean useHTTPs, deleteArtifacts, applyForAllJobs;
+    private final int fileType;
     private final int multipartUploadConcurrency, multipartUploadPartSize, multipartUploadThreshold;
     private final int connectTimeout, readTimeout, writeTimeout, retryCount;
 
@@ -36,8 +38,7 @@ public final class QiniuConfig implements Serializable, QiniuConfigurable {
             @Nonnull final String bucketName, @Nonnull final String objectNamePrefix,
             @Nonnull final String downloadDomain, @Nonnull final String upDomain, @Nonnull final String rsDomain,
             @Nonnull final String rsfDomain, @Nonnull final String ucDomain, @Nonnull final String apiDomain,
-            final boolean useHTTPs, final boolean infrequentStorage, final boolean deleteArtifacts,
-            final boolean applyForAllJobs,
+            final boolean useHTTPs, final int fileType, final boolean deleteArtifacts, final boolean applyForAllJobs,
             final int multipartUploadConcurrency, final int multipartUploadPartSize, final int multipartUploadThreshold,
             final int connectTimeout, final int readTimeout, final int writeTimeout, final int retryCount) {
         this.accessKey = accessKey;
@@ -51,7 +52,7 @@ public final class QiniuConfig implements Serializable, QiniuConfigurable {
         this.ucDomain = ucDomain;
         this.apiDomain = apiDomain;
         this.useHTTPs = useHTTPs;
-        this.infrequentStorage = infrequentStorage;
+        this.fileType = fileType;
         this.deleteArtifacts = deleteArtifacts;
         this.applyForAllJobs = applyForAllJobs;
         this.multipartUploadConcurrency = multipartUploadConcurrency;
@@ -199,16 +200,16 @@ public final class QiniuConfig implements Serializable, QiniuConfigurable {
         return this.useHTTPs;
     }
 
-    public boolean isInfrequentStorage() {
-        return this.infrequentStorage;
-    }
-
     public boolean isDeleteArtifacts() {
         return this.deleteArtifacts;
     }
 
     public boolean isApplyForAllJobs() {
         return this.applyForAllJobs;
+    }
+
+    public int getFileType() {
+        return this.fileType;
     }
 
     public int getMultipartUploadConcurrency() {

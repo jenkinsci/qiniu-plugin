@@ -48,7 +48,7 @@ public final class QiniuArtifactManagerFactory extends ArtifactManagerFactory im
             @Nonnull String bucketName, @Nonnull String objectNamePrefix, @Nonnull String downloadDomain,
             @Nonnull String rsDomain, @Nonnull String rsfDomain, @Nonnull String ucDomain, @Nonnull String apiDomain,
             @Nonnull String upDomain,
-            final boolean useHTTPs, final boolean infrequentStorage, final boolean deleteArtifacts,
+            final boolean useHTTPs, final int fileType, final boolean deleteArtifacts,
             int multipartUploadConcurrency, int multipartUploadPartSize,
             int multipartUploadThreshold, int connectTimeout,
             int readTimeout, int writeTimeout, int retryCount) {
@@ -130,7 +130,7 @@ public final class QiniuArtifactManagerFactory extends ArtifactManagerFactory im
             downloadDomain = "";
         }
         QiniuConfig config = new QiniuConfig(accessKey, secretKey, bucketName, objectNamePrefix, downloadDomain,
-                upDomain, rsDomain, rsfDomain, ucDomain, apiDomain, useHTTPs, infrequentStorage, deleteArtifacts,
+                upDomain, rsDomain, rsfDomain, ucDomain, apiDomain, useHTTPs, fileType, deleteArtifacts,
                 applyForAllJobs, multipartUploadConcurrency, multipartUploadPartSize, multipartUploadThreshold,
                 connectTimeout, readTimeout, writeTimeout, retryCount);
         if (downloadDomain.isEmpty()) {
@@ -152,7 +152,7 @@ public final class QiniuArtifactManagerFactory extends ArtifactManagerFactory im
                         config = new QiniuConfig(accessKey, secretKey, bucketName,
                                 objectNamePrefix, defaultDomain,
                                 upDomain, rsDomain, rsfDomain, ucDomain, apiDomain,
-                                useHTTPs, infrequentStorage, deleteArtifacts, applyForAllJobs,
+                                useHTTPs, fileType, deleteArtifacts, applyForAllJobs,
                                 multipartUploadConcurrency, multipartUploadPartSize,
                                 multipartUploadThreshold,
                                 connectTimeout, readTimeout, writeTimeout, retryCount);
@@ -731,16 +731,16 @@ public final class QiniuArtifactManagerFactory extends ArtifactManagerFactory im
         return this.config.isUseHTTPs();
     }
 
-    public boolean isInfrequentStorage() {
-        return this.config.isInfrequentStorage();
-    }
-
     public boolean isDeleteArtifacts() {
         return this.config.isDeleteArtifacts();
     }
 
     public boolean isApplyForAllJobs() {
         return this.config.isApplyForAllJobs();
+    }
+
+    public int getFileType() {
+        return this.config.getFileType();
     }
 
     public int getMultipartUploadConcurrency() {

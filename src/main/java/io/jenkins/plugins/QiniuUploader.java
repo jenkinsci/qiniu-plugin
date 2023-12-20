@@ -68,10 +68,7 @@ final class QiniuUploader extends MasterToSlaveFileCallable<Void> {
     private void uploadFiles(final File root) throws IOException {
         final Configuration config = this.config.getConfiguration();
         final UploadManager uploadManager = new UploadManager(config);
-        StringMap params = new StringMap().put("insertOnly", 1);
-        if (this.config.isInfrequentStorage()) {
-            params = params.put("fileType", 1);
-        }
+        final StringMap params = new StringMap().put("insertOnly", 1).put("fileType", this.config.getFileType());
         final Auth auth = Auth.create(this.config.getAccessKey(), this.config.getSecretKey().getPlainText());
         final String uploadToken = auth.uploadToken(this.config.getBucketName(), null, 24 * 3600, params);
         for (Map.Entry<String, String> entry : this.artifactURLs.entrySet()) {
