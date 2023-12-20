@@ -37,11 +37,11 @@ interface QiniuConfigurable {
 
     public boolean isUseHTTPs();
 
-    public boolean isInfrequentStorage();
-
     public boolean isDeleteArtifacts();
 
     public boolean isApplyForAllJobs();
+
+    public int getFileType();
 
     public int getMultipartUploadConcurrency();
 

@@ -4,7 +4,13 @@
     <f:entry title="${%QiniuSecretKey}" field="secretKey" description="${%QiniuSecretKeyDescription}"><f:password checkMethod="post" /></f:entry>
     <f:entry title="${%BucketName}" field="bucketName"><f:textbox checkMethod="post" /></f:entry>
     <f:advanced>
-        <f:entry title="${%InfrequentStorage}" field="infrequentStorage"><f:checkbox /></f:entry>
+        <f:entry name="fileType" title="${%StorageClass}" field="fileType">
+            <select name="fileType">
+                <option value="0">${%StorageClassStandard}</option>
+                <option value="1">${%StorageClassIA}</option>
+                <option value="4">${%StorageClassArchiveIR}</option>
+            </select>
+        </f:entry>
         <f:entry title="${%DeleteArtifacts}" field="deleteArtifacts"><f:checkbox default="true" id="deleteArtifacts" /></f:entry>
         <f:entry title="${%DownloadDomain}" field="downloadDomain"><f:textbox checkMethod="post" /></f:entry>
         <f:entry title="${%ObjectNamePrefix}" field="objectNamePrefix"><f:textbox checkMethod="post" /></f:entry>
