@@ -34,7 +34,7 @@ import jenkins.model.Jenkins;
 
 @Restricted(NoExternalUse.class)
 public final class QiniuArtifactManagerFactory extends ArtifactManagerFactory implements QiniuConfigurable {
-    public static final boolean applyForAllJobs = false;
+    private static final boolean applyForAllJobs = false;
     private static final Logger LOG = Logger.getLogger(QiniuArtifactManagerFactory.class.getName());
     private static final String DEFAULT_RS_HOST = Configuration.defaultRsHost;
     private static final String DEFAULT_API_HOST = Configuration.defaultApiHost;
@@ -175,6 +175,7 @@ public final class QiniuArtifactManagerFactory extends ArtifactManagerFactory im
                     "QiniuArtifactManagerFactory is configured: accessKey={0}, bucketName={1}, useDefaultIoSrcDomain=true",
                     new Object[] { accessKey, bucketName });
         }
+
     }
 
     @Nonnull
