@@ -18,6 +18,8 @@ import javax.annotation.Nonnull;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 
+import hudson.Util;
+import io.jenkins.plugins.QiniuArtifactManagerFactory.CannotGetDownloadDomain;
 import io.jenkins.plugins.QiniuFileSystem.InvalidPathError;
 import jenkins.util.VirtualFile;
 
@@ -96,9 +98,17 @@ public final class QiniuFile extends VirtualFile {
             objectName = QiniuFileSystem.SEPARATOR + objectName;
         }
 
-        String downloadDomain = config.getDownloadDomain();
-        if (downloadDomain.isEmpty()) {
+        String downloadDomain = Util.fixEmptyAndTrim(config.getDownloadDomain());
+        if (downloadDomain == null) {
             downloadDomain = config.getBucketManager().getDefaultIoSrcHost(config.getBucketName());
+        }
+        if (downloadDomain == null) {
+            throw new CannotGetDownloadDomain("The download domain is not set");
+        } else {
+            int protocolIndex = downloadDomain.indexOf("://");
+            if (protocolIndex != -1) {
+                downloadDomain = downloadDomain.substring(protocolIndex + "://".length());
+            }
         }
         final String url = new URL(scheme, downloadDomain, objectName).toString();
         LOG.log(Level.INFO, "QiniuFile::{0}::toExternalURL() url={0}", url);
